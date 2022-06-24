@@ -16,24 +16,24 @@ enum Command:
 object Views:
   val $userStream = EventStream.fromFuture(TypicodeClient.getUsers)
 
-  val headerVar: Var[String]            = Var("Users")
-  val usersVar: Var[List[Domain.User]]  = Var(List.empty)
-  val userVar: Var[Option[Domain.User]] = Var(None)
+  val headerVar: Var[ReactiveHtmlElement[HTMLElement]] = Var(p("Users"))
+  val usersVar: Var[List[Domain.User]]                 = Var(List.empty)
+  val userVar: Var[Option[Domain.User]]                = Var(None)
 
   val commandObserver = Observer[Command] {
     case Command.ShowAllUsers =>
       TypicodeClient.getUsers
         .onComplete {
           case Success(Right(users)) =>
-            headerVar.set("Users")
+            headerVar.set(div(cls := "content", p("Users")))
             usersVar.set(users)
             userVar.set(None)
           case Success(Left(error)) =>
-            headerVar.set(error)
+            headerVar.set(div(cls := "content", p(error)))
             usersVar.set(List.empty)
             userVar.set(None)
           case Failure(error) =>
-            headerVar.set(error.getMessage)
+            headerVar.set(div(cls := "content", p(error.getMessage)))
             usersVar.set(List.empty)
             userVar.set(None)
         }
@@ -42,15 +42,15 @@ object Views:
         .getUser(userId)
         .onComplete {
           case Success(Right(user)) =>
-            headerVar.set(user.name)
+            headerVar.set(userHeader(user.name))
             usersVar.set(List.empty)
             userVar.set(Some(user))
           case Success(Left(error)) =>
-            headerVar.set(error)
+            headerVar.set(div(cls := "content", p(error)))
             usersVar.set(List.empty)
             userVar.set(None)
           case Failure(error) =>
-            headerVar.set(error.getMessage)
+            headerVar.set(div(cls := "content", p(error.getMessage)))
             usersVar.set(List.empty)
             userVar.set(None)
         }
@@ -62,13 +62,35 @@ object Views:
       h1(
         cls := "ui header",
         i(cls   := "circular users icon"),
-        div(cls := "content", child.text <-- headerVar.signal)
+        div(cls := "content", child <-- headerVar.signal)
       ),
       div(cls := "ui divider"),
       children <-- $userStream.map {
         case Left(error)  => renderError(error)
         case Right(users) => renderUserList(users)
       }
+    )
+
+  def userHeader(t: String): ReactiveHtmlElement[HTMLElement] =
+    div(
+      cls   := "content",
+      width := "100%",
+      div(
+        cls := "ui grid",
+        div(
+          cls := "row",
+          div(cls := "fourteen wide column", p(t)),
+          div(
+            cls := "two wide column",
+            button(
+              cls := "ui labeled button",
+              i(cls := "left arrow icon"),
+              "Back",
+              onClick.mapTo(()) --> commandObserver.contramap(_ => Command.ShowAllUsers)
+            )
+          )
+        )
+      )
     )
 
   def renderError(error: String): List[ReactiveHtmlElement[HTMLElement]] =

@@ -19,7 +19,7 @@ lazy val `typicode-laminar-vite` = project
     // Emit modules in the most Vite-friendly way
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
-        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("livechart")))
+        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("typicode-laminar-vite")))
     },
     libraryDependencies ++= Seq(
       "com.raquo"                   %%% "laminar"           % "0.14.2",
