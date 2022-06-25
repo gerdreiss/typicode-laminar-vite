@@ -16,43 +16,59 @@ enum Command:
 object Views:
   val $userStream = EventStream.fromFuture(TypicodeClient.getUsers)
 
-  val headerVar: Var[ReactiveHtmlElement[HTMLElement]] = Var(p("Users"))
+  val defaultHeader = div(cls := "content", p("Users"))
+
+  val headerVar: Var[ReactiveHtmlElement[HTMLElement]] = Var(defaultHeader)
   val usersVar: Var[List[Domain.User]]                 = Var(List.empty)
   val userVar: Var[Option[Domain.User]]                = Var(None)
+  val postsVar: Var[List[Domain.Post]]                 = Var(List.empty)
+  val todosVar: Var[List[Domain.Todo]]                 = Var(List.empty)
 
   val commandObserver = Observer[Command] {
     case Command.ShowAllUsers =>
       TypicodeClient.getUsers
         .onComplete {
           case Success(Right(users)) =>
-            headerVar.set(div(cls := "content", p("Users")))
+            headerVar.set(defaultHeader)
             usersVar.set(users)
             userVar.set(None)
+            postsVar.set(List.empty)
+            todosVar.set(List.empty)
           case Success(Left(error)) =>
             headerVar.set(div(cls := "content", p(error)))
             usersVar.set(List.empty)
             userVar.set(None)
+            postsVar.set(List.empty)
+            todosVar.set(List.empty)
           case Failure(error) =>
             headerVar.set(div(cls := "content", p(error.getMessage)))
             usersVar.set(List.empty)
             userVar.set(None)
+            postsVar.set(List.empty)
+            todosVar.set(List.empty)
         }
     case Command.ShowUser(userId) =>
       TypicodeClient
-        .getUser(userId)
+        .getUserPostsAndTodos(userId)
         .onComplete {
-          case Success(Right(user)) =>
+          case Success(Right((user, posts, todos))) =>
             headerVar.set(userHeader(user.name))
             usersVar.set(List.empty)
             userVar.set(Some(user))
+            postsVar.set(posts)
+            todosVar.set(todos)
           case Success(Left(error)) =>
             headerVar.set(div(cls := "content", p(error)))
             usersVar.set(List.empty)
             userVar.set(None)
+            postsVar.set(List.empty)
+            todosVar.set(List.empty)
           case Failure(error) =>
             headerVar.set(div(cls := "content", p(error.getMessage)))
             usersVar.set(List.empty)
             userVar.set(None)
+            postsVar.set(List.empty)
+            todosVar.set(List.empty)
         }
   }
 
@@ -65,16 +81,20 @@ object Views:
         div(cls := "content", child <-- headerVar.signal)
       ),
       div(cls := "ui divider"),
-      children <-- $userStream.map {
-        case Left(error)  => renderError(error)
-        case Right(users) => renderUserList(users)
+      children <-- usersVar.signal
+        .combineWith(userVar.signal, postsVar.signal, todosVar.signal)
+        .map {
+          case (users, None, _, _)           => renderUserList(users)
+          case (_, Some(user), posts, todos) => renderUser(user, posts, todos)
+        },
+      onMountCallback { ctx =>
+        commandObserver.onNext(Command.ShowAllUsers)
       }
     )
 
   def userHeader(t: String): ReactiveHtmlElement[HTMLElement] =
     div(
-      cls   := "content",
-      width := "100%",
+      cls := "content",
       div(
         cls := "ui grid",
         div(
@@ -100,14 +120,40 @@ object Views:
     users.map { user =>
       div(
         cls := "ui grid",
-        div(cls := "four wide column", renderUser(user)),
-        div(cls := "three wide column", renderAddress(user.address)),
-        div(cls := "three wide column", renderGeo(user.address.geo)),
-        div(cls := "six wide column", renderCompany(user.company))
+        div(cls := "four wide column", renderUserCard(user)),
+        div(cls := "three wide column", renderAddressCard(user.address)),
+        div(cls := "three wide column", renderGeoCard(user.address.geo)),
+        div(cls := "six wide column", renderCompanyCard(user.company))
       )
     }
 
-  def renderUser(user: Domain.User): ReactiveHtmlElement[HTMLElement] =
+  def renderUser(
+      user: Domain.User,
+      posts: List[Domain.Post],
+      todos: List[Domain.Todo]
+  ): List[ReactiveHtmlElement[HTMLElement]] =
+    div(
+      cls := "ui grid",
+      div(
+        cls := "five wide column",
+        renderUserCard(user),
+        renderAddressCard(user.address),
+        renderGeoCard(user.address.geo),
+        renderCompanyCard(user.company)
+      ),
+      div(
+        cls := "five wide column",
+        h3(cls  := "ui header", div(cls := "content", i(cls := "list icon"), p("To-Do List"))),
+        div(cls := "ui relaxed divided list", renderTodoList(todos))
+      ),
+      div(
+        cls := "five wide column",
+        h3(cls  := "ui header", div(cls := "content", i(cls := "edit icon"), p("Posts"))),
+        div(cls := "ui relaxed divided list", renderPostList(posts))
+      )
+    ) :: Nil
+
+  def renderUserCard(user: Domain.User): ReactiveHtmlElement[HTMLElement] =
     div(
       cls := "ui card",
       div(
@@ -126,7 +172,7 @@ object Views:
       )
     )
 
-  def renderAddress(address: Domain.Address): ReactiveHtmlElement[HTMLElement] =
+  def renderAddressCard(address: Domain.Address): ReactiveHtmlElement[HTMLElement] =
     div(
       cls := "ui card",
       div(
@@ -139,7 +185,7 @@ object Views:
       )
     )
 
-  def renderGeo(geo: Domain.Geo): ReactiveHtmlElement[HTMLElement] =
+  def renderGeoCard(geo: Domain.Geo): ReactiveHtmlElement[HTMLElement] =
     div(
       cls := "ui card",
       div(
@@ -152,7 +198,7 @@ object Views:
       )
     )
 
-  def renderCompany(company: Domain.Company): ReactiveHtmlElement[HTMLElement] =
+  def renderCompanyCard(company: Domain.Company): ReactiveHtmlElement[HTMLElement] =
     div(
       cls := "ui card",
       div(
@@ -164,3 +210,26 @@ object Views:
         br()
       )
     )
+
+  def renderTodoList(todos: List[Domain.Todo]): List[ReactiveHtmlElement[HTMLElement]] =
+    todos.map { todo =>
+      div(
+        cls := "item",
+        if todo.completed then i(cls := "check icon")
+        else i(cls                   := "square outline icon"),
+        div(cls := "content", div(cls := "description", todo.title))
+      )
+    }
+
+  def renderPostList(posts: List[Domain.Post]): List[ReactiveHtmlElement[HTMLElement]] =
+    posts.map { post =>
+      div(
+        cls := "item",
+        i(cls := "edit icon"),
+        div(
+          cls := "content",
+          a(cls   := "header", a(post.title)),
+          div(cls := "description", p(post.body))
+        )
+      )
+    }
