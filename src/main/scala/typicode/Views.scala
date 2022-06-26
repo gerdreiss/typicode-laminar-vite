@@ -1,9 +1,8 @@
 package typicode
 
-import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L.*
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import org.scalajs.dom.*
+import org.scalajs.dom.HTMLElement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Failure
@@ -14,7 +13,6 @@ enum Command:
   case ShowUser(userId: Int)
 
 object Views:
-  val $userStream = EventStream.fromFuture(TypicodeClient.getUsers)
 
   val defaultHeader = div(cls := "content", p("Users"))
 
@@ -85,7 +83,7 @@ object Views:
         .combineWith(userVar.signal, postsVar.signal, todosVar.signal)
         .map {
           case (users, None, _, _)           => renderUserList(users)
-          case (_, Some(user), posts, todos) => renderUser(user, posts, todos)
+          case (_, Some(user), posts, todos) => renderUserDetails(user, posts, todos)
         },
       onMountCallback { ctx =>
         commandObserver.onNext(Command.ShowAllUsers)
@@ -127,7 +125,7 @@ object Views:
       )
     }
 
-  def renderUser(
+  def renderUserDetails(
       user: Domain.User,
       posts: List[Domain.Post],
       todos: List[Domain.Todo]
