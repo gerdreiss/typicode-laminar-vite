@@ -23,8 +23,8 @@ lazy val `typicode-laminar-vite` = project
     },
     libraryDependencies ++= Seq(
       "com.raquo"                   %%% "laminar"           % "0.14.2",
-      "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client" % "1.1.0",
-      "com.softwaremill.sttp.tapir" %%% "tapir-json-circe"  % "1.1.0",
+      "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client" % "1.1.1",
+      "com.softwaremill.sttp.tapir" %%% "tapir-json-circe"  % "1.1.1",
       "io.github.cquiroz"           %%% "scala-java-time"   % "2.4.0"
     ),
     fastLinkOutputDir := {
