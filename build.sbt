@@ -22,7 +22,7 @@ lazy val `typicode-laminar-vite` = project
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("typicode-laminar-vite")))
     },
     libraryDependencies ++= Seq(
-      "com.raquo"                   %%% "laminar"           % "0.14.2",
+      "com.raquo"                   %%% "laminar"           % "0.14.5",
       "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client" % "1.1.1",
       "com.softwaremill.sttp.tapir" %%% "tapir-json-circe"  % "1.1.1",
       "io.github.cquiroz"           %%% "scala-java-time"   % "2.4.0"
