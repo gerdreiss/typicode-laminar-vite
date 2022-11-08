@@ -10,7 +10,7 @@ lazy val `typicode-laminar-vite` = project
     name         := "typicode-laminar-vite",
     organization := "pro.reiss",
     version      := "0.1.0",
-    scalaVersion := "3.2.0",
+    scalaVersion := "3.2.1",
     scalacOptions ++= Seq("-encoding", "utf-8", "-deprecation", "-feature"),
 
     // We have a `main` method
