@@ -25,7 +25,7 @@ lazy val `typicode-laminar-vite` = project
       "com.raquo"                   %%% "laminar"           % "0.14.5",
       "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client" % "1.2.3",
       "com.softwaremill.sttp.tapir" %%% "tapir-json-circe"  % "1.2.3",
-      "io.github.cquiroz"           %%% "scala-java-time"   % "2.4.0"
+      "io.github.cquiroz"           %%% "scala-java-time"   % "2.5.0"
     ),
     fastLinkOutputDir := {
       // Ensure that fastLinkJS has run, then return its output directory
